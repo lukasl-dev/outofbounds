@@ -33,6 +33,8 @@
             version = "0.1.0";
             src = gitignoreSource ./.;
             cargoLock.lockFile = ./Cargo.lock;
+            nativeBuildInputs = [ pkgs.pkg-config ];
+            buildInputs = [ pkgs.openssl ];
           };
           default = outofbounds;
         }
@@ -51,6 +53,8 @@
               rust-analyzer
               clippy
               rustfmt
+              pkg-config
+              openssl
             ];
           };
         }
