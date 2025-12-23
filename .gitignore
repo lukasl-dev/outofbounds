@@ -21,3 +21,8 @@ target
 #.idea/
 
 .direnv/
+
+
+# Added by cargo
+
+/target

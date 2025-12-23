@@ -1,5 +1,5 @@
 {
-  description = "onyx";
+  description = "outofbounds";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
@@ -28,8 +28,13 @@
           pkgs = import nixpkgs { inherit system; };
         in
         rec {
-          default = null; # TODO:
-          outofbounds = default;
+          outofbounds = pkgs.rustPlatform.buildRustPackage {
+            pname = "outofbounds";
+            version = "0.1.0";
+            src = gitignoreSource ./.;
+            cargoLock.lockFile = ./Cargo.lock;
+          };
+          default = outofbounds;
         }
       );
 
@@ -40,7 +45,12 @@
         in
         {
           default = pkgs.mkShell {
-            buildInputs = [
+            packages = with pkgs; [
+              rustc
+              cargo
+              rust-analyzer
+              clippy
+              rustfmt
             ];
           };
         }
