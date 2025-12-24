@@ -10,6 +10,11 @@
     };
   };
 
+  nixConfig = {
+    extra-trusted-public-keys = "outofbounds.cachix.org-1:ToW43AWvNwShZOnh9NlgBP3BT68+5ytLyi3eZaXXi1I=";
+    extra-substituters = "https://outofbounds.cachix.org";
+  };
+
   outputs =
     {
       self,
