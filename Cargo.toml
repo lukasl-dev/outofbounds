@@ -4,4 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+anyhow = "1.0.100"
 matrix-sdk = { git = "https://github.com/matrix-org/matrix-rust-sdk" }
+tokio = { version = "1.42.0", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.8"
+reqwest = { version = "0.12", features = ["json"] }
+serde_json = "1.0"

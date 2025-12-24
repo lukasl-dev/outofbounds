@@ -34,7 +34,10 @@
             src = gitignoreSource ./.;
             cargoLock.lockFile = ./Cargo.lock;
             nativeBuildInputs = [ pkgs.pkg-config ];
-            buildInputs = [ pkgs.openssl ];
+            buildInputs = [
+              pkgs.openssl
+              pkgs.sqlite
+            ];
           };
           default = outofbounds;
         }
@@ -55,6 +58,7 @@
               rustfmt
               pkg-config
               openssl
+              sqlite
             ];
           };
         }
