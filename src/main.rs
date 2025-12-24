@@ -15,13 +15,15 @@ async fn main() -> anyhow::Result<()> {
     let config_path = std::env::args().nth(1).unwrap_or_else(|| "config.toml".to_string());
     let cfg = Config::load(&config_path)?;
 
-    let matrix = Matrix::new(&cfg.matrix.user, &cfg.matrix.password).await?;
+    let matrix_password = cfg.matrix.resolve_password()?;
+    let matrix = Matrix::new(&cfg.matrix.user, &matrix_password).await?;
     println!("Logged into matrix!");
 
+    let homebox_password = cfg.homebox.resolve_password()?;
     let homebox = HomeBox::new(
         &cfg.homebox.base_url,
         &cfg.homebox.username,
-        &cfg.homebox.password,
+        &homebox_password,
     )
     .await?;
     println!("Logged into homebox!");

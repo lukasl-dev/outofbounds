@@ -12,17 +12,32 @@ pub struct MatrixMessageConfig {
 #[derive(Deserialize, Serialize)]
 pub struct MatrixConfig {
     pub user: String,
-    pub password: String,
+    pub password: Option<String>,
+    pub password_file: Option<String>,
     pub room_id: String,
     pub messages: Vec<MatrixMessageConfig>,
 }
 
 impl MatrixConfig {
+    pub fn resolve_password(&self) -> anyhow::Result<String> {
+        if let Some(file) = &self.password_file {
+            fs::read_to_string(file)
+                .map(|s| s.trim().to_string())
+                .context(format!("failed to read matrix password from '{}'", file))
+        } else if let Some(password) = &self.password {
+            Ok(password.clone())
+        } else {
+            anyhow::bail!("either matrix password or password_file must be set");
+        }
+    }
+
     pub fn validate(&self) -> anyhow::Result<()> {
         if self.user.is_empty() {
             anyhow::bail!("matrix user must not be empty");
-        } else if self.password.is_empty() {
-            anyhow::bail!("matrix password must not be empty");
+        } else if self.password.as_deref().unwrap_or("").is_empty()
+            && self.password_file.as_deref().unwrap_or("").is_empty()
+        {
+            anyhow::bail!("either matrix password or password_file must be set");
         } else if self.room_id.is_empty() {
             anyhow::bail!("matrix room id must not be empty");
         } else if self.messages.is_empty() {
@@ -50,18 +65,33 @@ pub struct HomeBoxItemConfig {
 pub struct HomeBoxConfig {
     pub base_url: String,
     pub username: String,
-    pub password: String,
+    pub password: Option<String>,
+    pub password_file: Option<String>,
     pub items: Vec<HomeBoxItemConfig>,
 }
 
 impl HomeBoxConfig {
+    pub fn resolve_password(&self) -> anyhow::Result<String> {
+        if let Some(file) = &self.password_file {
+            fs::read_to_string(file)
+                .map(|s| s.trim().to_string())
+                .context(format!("failed to read homebox password from '{}'", file))
+        } else if let Some(password) = &self.password {
+            Ok(password.clone())
+        } else {
+            anyhow::bail!("either homebox password or password_file must be set");
+        }
+    }
+
     pub fn validate(&self) -> anyhow::Result<()> {
         if self.base_url.is_empty() {
             anyhow::bail!("homebox base url must not be empty");
         } else if self.username.is_empty() {
             anyhow::bail!("homebox username must not be empty");
-        } else if self.password.is_empty() {
-            anyhow::bail!("homebox password must not be empty");
+        } else if self.password.as_deref().unwrap_or("").is_empty()
+            && self.password_file.as_deref().unwrap_or("").is_empty()
+        {
+            anyhow::bail!("either homebox password or password_file must be set");
         } else {
             Ok(())
         }
@@ -79,7 +109,8 @@ impl Default for Config {
         Self {
             matrix: MatrixConfig {
                 user: "@bot:example.com".to_string(),
-                password: "".to_string(),
+                password: Some("".to_string()),
+                password_file: None,
                 room_id: "aslkdfasdlkfj1234a:example.com".to_string(),
                 messages: vec![
                     MatrixMessageConfig {
@@ -95,7 +126,8 @@ impl Default for Config {
             homebox: HomeBoxConfig {
                 base_url: "https://demo.homebox.software".to_string(),
                 username: "foo".to_string(),
-                password: "baz".to_string(),
+                password: Some("baz".to_string()),
+                password_file: None,
                 items: vec![HomeBoxItemConfig {
                     id: "00000000-0000-0000-0000-000000000000".to_string(),
                     threshold: 5,
