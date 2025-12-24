@@ -12,7 +12,8 @@ mod matrix;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let cfg = Config::load("config.toml")?;
+    let config_path = std::env::args().nth(1).unwrap_or_else(|| "config.toml".to_string());
+    let cfg = Config::load(&config_path)?;
 
     let matrix = Matrix::new(&cfg.matrix.user, &cfg.matrix.password).await?;
     println!("Logged into matrix!");

@@ -22,6 +22,7 @@ target
 
 .direnv/
 result
+.scratchpad/
 
 # Added by cargo
 /target

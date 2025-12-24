@@ -32,7 +32,13 @@
             pname = "outofbounds";
             version = "0.1.0";
             src = gitignoreSource ./.;
-            cargoLock.lockFile = ./Cargo.lock;
+            cargoLock = {
+              lockFile = ./Cargo.lock;
+              outputHashes = {
+                "matrix-sdk-0.16.0" = "sha256-tI1CT9tWOAC2w24DRaC8Kw7ZvHkfE7IBeYzDpbpu9ZI=";
+                "ruma-0.14.0" = "sha256-XVdEJUhrr4ehY+y3rfM637wfHwJJJchbAlHTH37NTYc=";
+              };
+            };
             nativeBuildInputs = [ pkgs.pkg-config ];
             buildInputs = [
               pkgs.openssl
@@ -63,5 +69,12 @@
           };
         }
       );
+
+      nixosModules.default =
+        { pkgs, ... }:
+        {
+          imports = [ ./nixos-module.nix ];
+          services.outofbounds.package = nixpkgs.lib.mkDefault self.packages.${pkgs.system}.default;
+        };
     };
 }
