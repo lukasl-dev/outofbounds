@@ -66,31 +66,31 @@ impl HomeBox {
         Ok(data)
     }
 
-    pub async fn get_item_by_asset_id(
+    pub async fn get_item(
         &self,
-        asset_id: &str,
-    ) -> anyhow::Result<Vec<HomeBoxItem>> {
-        let url = format!("{}/api/v1/assets/{}", self.base_url, asset_id);
+        id: &str,
+    ) -> anyhow::Result<HomeBoxItem> {
+        let url = format!("{}/api/v1/items/{}", self.base_url, id);
 
         let response = self.client.get(&url).send().await.context(format!(
-            "failed to send get item by asset id '{}' request",
-            asset_id
+            "failed to send get item by id '{}' request",
+            id
         ))?;
 
-        let data: GetItemByAssetIdResponse = response
+        let data: HomeBoxItem = response
             .error_for_status()
             .context(format!(
-                "invalid get item by asset id '{}' status code",
-                asset_id
+                "invalid get item by id '{}' status code",
+                id
             ))?
             .json()
             .await
             .context(format!(
-                "failed to deserialise get item by asset id '{}' response",
-                asset_id
+                "failed to deserialise get item by id '{}' response",
+                id
             ))?;
 
-        Ok(data.items)
+        Ok(data)
     }
 }
 
@@ -115,10 +115,4 @@ struct UserLoginRequest {
 #[serde(rename_all = "camelCase")]
 struct UserLoginResponse {
     pub token: String,
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct GetItemByAssetIdResponse {
-    pub items: Vec<HomeBoxItem>,
 }

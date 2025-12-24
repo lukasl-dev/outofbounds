@@ -42,7 +42,7 @@ impl MatrixConfig {
 
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct HomeBoxItemConfig {
-    pub asset_id: String,
+    pub id: String,
     pub threshold: i32,
 }
 
@@ -91,7 +91,7 @@ impl Default for Config {
                 username: "foo".to_string(),
                 password: "baz".to_string(),
                 items: vec![HomeBoxItemConfig {
-                    asset_id: "000-001".to_string(),
+                    id: "00000000-0000-0000-0000-000000000000".to_string(),
                     threshold: 5,
                 }],
             },

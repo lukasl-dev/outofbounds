@@ -27,41 +27,41 @@ async fn main() -> anyhow::Result<()> {
     let room = matrix.get_room(&cfg.matrix.room_id).await?;
 
     for cfg_item in cfg.homebox.items {
-        let items = homebox
-            .get_item_by_asset_id(&cfg_item.asset_id)
+        let item = homebox
+            .get_item(&cfg_item.id)
             .await
-            .context(format!("failed to get item '{}'", cfg_item.asset_id))?;
+            .context(format!("failed to get item '{}'", cfg_item.id))?;
 
-        for item in items {
-            if item.quantity <= cfg_item.threshold {
-                for template in &cfg.matrix.messages {
-                    let plain = template
-                        .plain
-                        .replace("{name}", &item.name)
-                        .replace("{quantity}", &item.quantity.to_string())
-                        .replace("{threshold}", &cfg_item.threshold.to_string())
-                        .replace("{asset_id}", &item.asset_id);
+        if item.quantity <= cfg_item.threshold {
+            for template in &cfg.matrix.messages {
+                let plain = template
+                    .plain
+                    .replace("{name}", &item.name)
+                    .replace("{quantity}", &item.quantity.to_string())
+                    .replace("{threshold}", &cfg_item.threshold.to_string())
+                    .replace("{asset_id}", &item.asset_id)
+                    .replace("{id}", &item.id);
 
-                    let html = template
-                        .html
-                        .replace("{name}", &item.name)
-                        .replace("{quantity}", &item.quantity.to_string())
-                        .replace("{threshold}", &cfg_item.threshold.to_string())
-                        .replace("{asset_id}", &item.asset_id);
+                let html = template
+                    .html
+                    .replace("{name}", &item.name)
+                    .replace("{quantity}", &item.quantity.to_string())
+                    .replace("{threshold}", &cfg_item.threshold.to_string())
+                    .replace("{asset_id}", &item.asset_id)
+                    .replace("{id}", &item.id);
 
-                    room.send(RoomMessageEventContent::text_html(plain, html))
-                        .await
-                        .context(format!(
-                            "failed to send message to room '{}'",
-                            room.room_id()
-                        ))?;
-                }
-            } else {
-                println!(
-                    "Enough ({} > {}) of item '{}'",
-                    item.quantity, cfg_item.threshold, item.asset_id
-                );
+                room.send(RoomMessageEventContent::text_html(plain, html))
+                    .await
+                    .context(format!(
+                        "failed to send message to room '{}'",
+                        room.room_id()
+                    ))?;
             }
+        } else {
+            println!(
+                "Enough ({} > {}) of item '{}' ({})",
+                item.quantity, cfg_item.threshold, item.name, item.id
+            );
         }
     }
 
