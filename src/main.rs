@@ -1,5 +1,6 @@
 use anyhow::Context;
 use matrix_sdk::ruma::events::room::message::RoomMessageEventContent;
+use rand::seq::SliceRandom;
 
 use crate::config::Config;
 use crate::homebox::HomeBox;
@@ -33,7 +34,7 @@ async fn main() -> anyhow::Result<()> {
             .context(format!("failed to get item '{}'", cfg_item.id))?;
 
         if item.quantity <= cfg_item.threshold {
-            for template in &cfg.matrix.messages {
+            if let Some(template) = cfg.matrix.messages.choose(&mut rand::thread_rng()) {
                 let plain = template
                     .plain
                     .replace("{name}", &item.name)

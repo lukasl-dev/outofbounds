@@ -81,10 +81,16 @@ impl Default for Config {
                 user: "@bot:example.com".to_string(),
                 password: "".to_string(),
                 room_id: "aslkdfasdlkfj1234a:example.com".to_string(),
-                messages: vec![MatrixMessageConfig {
-                    plain: "⚠️ Low stock: {name} (Quantity: {quantity}, Threshold: {threshold})".to_string(),
-                    html: "⚠️ <b>Low stock</b>: <code>{name}</code> (Quantity: <b>{quantity}</b>, Threshold: <i>{threshold}</i>)".to_string(),
-                }],
+                messages: vec![
+                    MatrixMessageConfig {
+                        plain: "⚠️ Alarm! Von {name} haben wir nur noch {quantity} da (Limit: {threshold}). Ab zum Einkaufen!".to_string(),
+                        html: "⚠️ <b>Großer Notfall!</b> Von <code>{name}</code> haben wir nur noch <b>{quantity}</b> Stück da (Limit war <i>{threshold}</i>). Husch husch, ab zum Einkaufen! 🛒".to_string(),
+                    },
+                    MatrixMessageConfig {
+                        plain: "Huhu Mama, unser {name} Vorrat geht zur Neige! Nur noch {quantity} übrig. Zeit für Nachschub!".to_string(),
+                        html: "Huhu Mama! 👋 Unser <code>{name}</code> Vorrat geht zur Neige! Nur noch <b>{quantity}</b> Stück übrig. Zeit für Nachschub! 📦".to_string(),
+                    }
+                ],
             },
             homebox: HomeBoxConfig {
                 base_url: "https://demo.homebox.software".to_string(),
