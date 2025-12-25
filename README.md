@@ -21,20 +21,19 @@ Add `outofbounds` to your flake inputs and use the provided module:
             enable = true;
             interval = "hourly"; # systemd.time format
             
-            # Use file paths for secrets (sops-nix compatible)
-            homeboxPasswordFile = "/run/secrets/homebox-pass";
-            matrixPasswordFile = "/run/secrets/matrix-pass";
-
             settings = {
               homebox = {
                 base_url = "https://homebox.example.com";
                 username = "myuser";
+                # Use file paths for secrets (sops-nix compatible)
+                password_file = config.sops.secrets.homebox-pass.path;
                 items = [
                   { id = "00000000-0000-0000-0000-000000000000"; threshold = 5; }
                 ];
               };
               matrix = {
                 user = "@bot:matrix.org";
+                password_file = config.sops.secrets.matrix-pass.path;
                 room_id = "!roomid:matrix.org";
                 messages = [
                   {
