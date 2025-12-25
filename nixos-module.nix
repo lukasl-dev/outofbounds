@@ -7,7 +7,11 @@
 let
   cfg = config.services.outofbounds;
   tomlFormat = pkgs.formats.toml { };
-  configFile = tomlFormat.generate "outofbounds-config.toml" cfg.settings;
+  configFile =
+    if lib.isType "path" cfg.settings || lib.isPath cfg.settings || (lib.isString cfg.settings && lib.hasPrefix "/" cfg.settings) then
+      cfg.settings
+    else
+      tomlFormat.generate "outofbounds-config.toml" cfg.settings;
 in
 {
   options.services.outofbounds = {
@@ -19,12 +23,11 @@ in
     };
 
     settings = lib.mkOption {
-      type = tomlFormat.type;
+      type = lib.types.either tomlFormat.type lib.types.path;
       default = { };
       description = ''
-        The configuration for outofbounds, as a Nix attribute set.
-        See the project's config.rs for the expected structure.
-        Use `password_file` for secrets.
+        The configuration for outofbounds, either as a Nix attribute set or a path to a TOML file.
+        If a path is provided, it will be used directly (useful for sops-nix templates).
       '';
     };
 

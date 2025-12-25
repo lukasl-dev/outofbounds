@@ -21,6 +21,7 @@ Add `outofbounds` to your flake inputs and use the provided module:
             enable = true;
             interval = "hourly"; # systemd.time format
             
+            # Option A: Attribute set (Nix will generate the TOML)
             settings = {
               homebox = {
                 base_url = "https://homebox.example.com";
@@ -43,6 +44,9 @@ Add `outofbounds` to your flake inputs and use the provided module:
                 ];
               };
             };
+
+            # Option B: Path to a file (e.g. sops-nix template)
+            # settings = config.sops.templates."outofbounds.toml".path;
           };
         }
       ];
