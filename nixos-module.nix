@@ -39,12 +39,19 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    users.users.outofbounds = {
+      isSystemUser = true;
+      group = "outofbounds";
+    };
+    users.groups.outofbounds = { };
+
     systemd.services.outofbounds = {
       description = "outofbounds inventory notifier";
       serviceConfig = {
         Type = "oneshot";
         ExecStart = "${cfg.package}/bin/outofbounds ${configFile}";
-        DynamicUser = true;
+        User = "outofbounds";
+        Group = "outofbounds";
       };
     };
 

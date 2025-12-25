@@ -81,11 +81,14 @@
         }
       );
 
-      nixosModules.default =
-        { pkgs, ... }:
-        {
-          imports = [ ./nixos-module.nix ];
-          services.outofbounds.package = nixpkgs.lib.mkDefault self.packages.${pkgs.system}.default;
-        };
+      nixosModules = rec {
+        default = outofbounds;
+        outofbounds =
+          { pkgs, ... }:
+          {
+            imports = [ ./nixos-module.nix ];
+            services.outofbounds.package = nixpkgs.lib.mkDefault self.packages.${pkgs.system}.default;
+          };
+      };
     };
 }
