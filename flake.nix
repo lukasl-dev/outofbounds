@@ -10,7 +10,6 @@
     };
     crane = {
       url = "github:ipetkov/crane";
-      inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
@@ -43,8 +42,10 @@
             version = "0.1.0";
             cargoLock = ./Cargo.lock;
             outputHashes = {
-              "matrix-sdk-0.16.0" = "sha256-tI1CT9tWOAC2w24DRaC8Kw7ZvHkfE7IBeYzDpbpu9ZI=";
-              "ruma-0.14.0" = "sha256-XVdEJUhrr4ehY+y3rfM637wfHwJJJchbAlHTH37NTYc=";
+              "git+https://github.com/matrix-org/matrix-rust-sdk#cd9f433358586e8717417fc043650f46362aa14c" =
+                "sha256-tI1CT9tWOAC2w24DRaC8Kw7ZvHkfE7IBeYzDpbpu9ZI=";
+              "git+https://github.com/ruma/ruma?rev=a67081e402dce14365089b34f50489dacc9c53b5#a67081e402dce14365089b34f50489dacc9c53b5" =
+                "sha256-XVdEJUhrr4ehY+y3rfM637wfHwJJJchbAlHTH37NTYc=";
             };
             nativeBuildInputs = [ pkgs.pkg-config ];
             buildInputs = [
@@ -85,9 +86,12 @@
         default = outofbounds;
         outofbounds =
           { pkgs, ... }:
+          let
+            inherit (self.packages.${pkgs.stdenv.hostPlatform.system}) default;
+          in
           {
             imports = [ ./nixos-module.nix ];
-            services.outofbounds.package = nixpkgs.lib.mkDefault self.packages.${pkgs.system}.default;
+            services.outofbounds.package = nixpkgs.lib.mkDefault default;
           };
       };
     };
