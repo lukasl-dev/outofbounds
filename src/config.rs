@@ -15,7 +15,13 @@ pub struct MatrixConfig {
     pub password: Option<String>,
     pub password_file: Option<String>,
     pub room_id: String,
+    #[serde(default = "default_retries")]
+    pub retries: u32,
     pub messages: Vec<MatrixMessageConfig>,
+}
+
+fn default_retries() -> u32 {
+    5
 }
 
 impl MatrixConfig {
@@ -23,11 +29,16 @@ impl MatrixConfig {
         if let Some(file) = &self.password_file {
             fs::read_to_string(file)
                 .map(|s| s.trim().to_string())
-                .context(format!("failed to read matrix password from '{}'", file))
+                .context(format!(
+                    "failed to read matrix password from '{}'",
+                    file
+                ))
         } else if let Some(password) = &self.password {
             Ok(password.clone())
         } else {
-            anyhow::bail!("either matrix password or password_file must be set");
+            anyhow::bail!(
+                "either matrix password or password_file must be set"
+            );
         }
     }
 
@@ -37,7 +48,9 @@ impl MatrixConfig {
         } else if self.password.as_deref().unwrap_or("").is_empty()
             && self.password_file.as_deref().unwrap_or("").is_empty()
         {
-            anyhow::bail!("either matrix password or password_file must be set");
+            anyhow::bail!(
+                "either matrix password or password_file must be set"
+            );
         } else if self.room_id.is_empty() {
             anyhow::bail!("matrix room id must not be empty");
         } else if self.messages.is_empty() {
@@ -67,6 +80,8 @@ pub struct HomeBoxConfig {
     pub username: String,
     pub password: Option<String>,
     pub password_file: Option<String>,
+    #[serde(default = "default_retries")]
+    pub retries: u32,
     pub items: Vec<HomeBoxItemConfig>,
 }
 
@@ -75,11 +90,16 @@ impl HomeBoxConfig {
         if let Some(file) = &self.password_file {
             fs::read_to_string(file)
                 .map(|s| s.trim().to_string())
-                .context(format!("failed to read homebox password from '{}'", file))
+                .context(format!(
+                    "failed to read homebox password from '{}'",
+                    file
+                ))
         } else if let Some(password) = &self.password {
             Ok(password.clone())
         } else {
-            anyhow::bail!("either homebox password or password_file must be set");
+            anyhow::bail!(
+                "either homebox password or password_file must be set"
+            );
         }
     }
 
@@ -91,7 +111,9 @@ impl HomeBoxConfig {
         } else if self.password.as_deref().unwrap_or("").is_empty()
             && self.password_file.as_deref().unwrap_or("").is_empty()
         {
-            anyhow::bail!("either homebox password or password_file must be set");
+            anyhow::bail!(
+                "either homebox password or password_file must be set"
+            );
         } else {
             Ok(())
         }
@@ -112,6 +134,7 @@ impl Default for Config {
                 password: Some("".to_string()),
                 password_file: None,
                 room_id: "aslkdfasdlkfj1234a:example.com".to_string(),
+                retries: default_retries(),
                 messages: vec![
                     MatrixMessageConfig {
                         plain: "⚠️ Alarm! Von {name} haben wir nur noch {quantity} da (Limit: {threshold}). Ab zum Einkaufen!".to_string(),
@@ -128,6 +151,7 @@ impl Default for Config {
                 username: "foo".to_string(),
                 password: Some("baz".to_string()),
                 password_file: None,
+                retries: default_retries(),
                 items: vec![HomeBoxItemConfig {
                     id: "00000000-0000-0000-0000-000000000000".to_string(),
                     threshold: 5,

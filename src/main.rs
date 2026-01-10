@@ -12,11 +12,15 @@ mod matrix;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let config_path = std::env::args().nth(1).unwrap_or_else(|| "config.toml".to_string());
+    let config_path = std::env::args()
+        .nth(1)
+        .unwrap_or_else(|| "config.toml".to_string());
     let cfg = Config::load(&config_path)?;
 
     let matrix_password = cfg.matrix.resolve_password()?;
-    let matrix = Matrix::new(&cfg.matrix.user, &matrix_password).await?;
+    let matrix =
+        Matrix::new(&cfg.matrix.user, &matrix_password, cfg.matrix.retries)
+            .await?;
     println!("Logged into matrix!");
 
     let homebox_password = cfg.homebox.resolve_password()?;
@@ -24,6 +28,7 @@ async fn main() -> anyhow::Result<()> {
         &cfg.homebox.base_url,
         &cfg.homebox.username,
         &homebox_password,
+        cfg.homebox.retries,
     )
     .await?;
     println!("Logged into homebox!");
@@ -37,7 +42,9 @@ async fn main() -> anyhow::Result<()> {
             .context(format!("failed to get item '{}'", cfg_item.id))?;
 
         if item.quantity <= cfg_item.threshold {
-            if let Some(template) = cfg.matrix.messages.choose(&mut rand::thread_rng()) {
+            if let Some(template) =
+                cfg.matrix.messages.choose(&mut rand::thread_rng())
+            {
                 let plain = template
                     .plain
                     .replace("{name}", &item.name)
@@ -54,12 +61,31 @@ async fn main() -> anyhow::Result<()> {
                     .replace("{asset_id}", &item.asset_id)
                     .replace("{id}", &item.id);
 
-                room.send(RoomMessageEventContent::text_html(plain, html))
-                    .await
-                    .context(format!(
-                        "failed to send message to room '{}'",
-                        room.room_id()
-                    ))?;
+                for i in 0..matrix.retries {
+                    if i > 0 {
+                        tokio::time::sleep(std::time::Duration::from_secs(
+                            2u64.pow(i),
+                        ))
+                        .await;
+                    }
+
+                    match room
+                        .send(RoomMessageEventContent::text_html(
+                            plain.clone(),
+                            html.clone(),
+                        ))
+                        .await
+                    {
+                        Ok(_) => break,
+                        Err(_) if i < matrix.retries - 1 => continue,
+                        Err(e) => {
+                            return Err(anyhow::anyhow!(e).context(format!(
+                                "failed to send message to room '{}'",
+                                room.room_id()
+                            )));
+                        }
+                    }
+                }
             }
         } else {
             println!(

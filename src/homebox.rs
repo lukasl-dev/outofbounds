@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 pub struct HomeBox {
     base_url: String,
     client: reqwest::Client,
+    retries: u32,
 }
 
 impl HomeBox {
@@ -11,6 +12,7 @@ impl HomeBox {
         base_url: &str,
         username: &str,
         password: &str,
+        retries: u32,
     ) -> anyhow::Result<Self> {
         let base_url = base_url.trim_end_matches('/').to_string();
 
@@ -21,6 +23,7 @@ impl HomeBox {
                 password: password.to_string(),
                 stay_logged_in: false,
             },
+            retries,
         )
         .await
         .context("failed to authenticate homebox")?;
@@ -36,12 +39,17 @@ impl HomeBox {
             .build()
             .context("failed to build homebox client")?;
 
-        Ok(HomeBox { base_url, client })
+        Ok(HomeBox {
+            base_url,
+            client,
+            retries,
+        })
     }
 
     async fn user_login(
         base_url: &str,
         request: UserLoginRequest,
+        retries: u32,
     ) -> anyhow::Result<UserLoginResponse> {
         let url = format!("{}/api/v1/users/login", base_url);
 
@@ -49,48 +57,82 @@ impl HomeBox {
             .build()
             .context("failed to instantiate user login client")?;
 
-        let response = client
-            .post(&url)
-            .json(&request)
-            .send()
-            .await
-            .context("failed to send user login request")?;
+        for i in 0..retries {
+            if i > 0 {
+                tokio::time::sleep(std::time::Duration::from_secs(2u64.pow(i)))
+                    .await;
+            }
 
-        let data = response
-            .error_for_status()
-            .context("invalid user login status code")?
-            .json()
-            .await
-            .context("failed to deserialise user login response")?;
+            let response = match client.post(&url).json(&request).send().await {
+                Ok(r) => r,
+                Err(_) if i < retries - 1 => continue,
+                Err(e) => {
+                    return Err(anyhow::anyhow!(e)
+                        .context("failed to send user login request"));
+                }
+            };
 
-        Ok(data)
+            match response.error_for_status() {
+                Ok(r) => match r.json().await {
+                    Ok(data) => return Ok(data),
+                    Err(_) if i < retries - 1 => continue,
+                    Err(e) => {
+                        return Err(anyhow::anyhow!(e).context(
+                            "failed to deserialise user login response",
+                        ));
+                    }
+                },
+                Err(_) if i < retries - 1 => continue,
+                Err(e) => {
+                    return Err(anyhow::anyhow!(e)
+                        .context("invalid user login status code"));
+                }
+            }
+        }
+
+        unreachable!()
     }
 
-    pub async fn get_item(
-        &self,
-        id: &str,
-    ) -> anyhow::Result<HomeBoxItem> {
+    pub async fn get_item(&self, id: &str) -> anyhow::Result<HomeBoxItem> {
         let url = format!("{}/api/v1/items/{}", self.base_url, id);
 
-        let response = self.client.get(&url).send().await.context(format!(
-            "failed to send get item by id '{}' request",
-            id
-        ))?;
+        for i in 0..self.retries {
+            if i > 0 {
+                tokio::time::sleep(std::time::Duration::from_secs(2u64.pow(i)))
+                    .await;
+            }
 
-        let data: HomeBoxItem = response
-            .error_for_status()
-            .context(format!(
-                "invalid get item by id '{}' status code",
-                id
-            ))?
-            .json()
-            .await
-            .context(format!(
-                "failed to deserialise get item by id '{}' response",
-                id
-            ))?;
+            let response = match self.client.get(&url).send().await {
+                Ok(r) => r,
+                Err(_) if i < self.retries - 1 => continue,
+                Err(e) => {
+                    return Err(anyhow::anyhow!(e).context(format!(
+                        "failed to send get item by id '{}' request",
+                        id
+                    )));
+                }
+            };
 
-        Ok(data)
+            match response.error_for_status() {
+                Ok(r) => match r.json().await {
+                    Ok(data) => return Ok(data),
+                    Err(_) if i < self.retries - 1 => continue,
+                    Err(e) => return Err(anyhow::anyhow!(e).context(format!(
+                        "failed to deserialise get item by id '{}' response",
+                        id
+                    ))),
+                },
+                Err(_) if i < self.retries - 1 => continue,
+                Err(e) => {
+                    return Err(anyhow::anyhow!(e).context(format!(
+                        "invalid get item by id '{}' status code",
+                        id
+                    )));
+                }
+            }
+        }
+
+        unreachable!()
     }
 }
 

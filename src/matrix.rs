@@ -6,30 +6,55 @@ use matrix_sdk::{
 
 pub struct Matrix {
     client: Client,
+    pub retries: u32,
 }
 
 impl Matrix {
-    pub async fn new(user: &str, password: &str) -> anyhow::Result<Self> {
+    pub async fn new(
+        user: &str,
+        password: &str,
+        retries: u32,
+    ) -> anyhow::Result<Self> {
         let user_id = OwnedUserId::try_from(user)
             .context(format!("failed to parse matrix user id '{}'", user))?;
 
-        let client = Client::builder()
-            .server_name(user_id.server_name())
-            .build()
-            .await
-            .context("failed to build matrix client")?;
+        for i in 0..retries {
+            if i > 0 {
+                tokio::time::sleep(std::time::Duration::from_secs(2u64.pow(i)))
+                    .await;
+            }
 
-        client
-            .matrix_auth()
-            .login_username(&user_id, password)
-            .send()
-            .await
-            .context(format!(
-                "failed to authenticate with matrix server '{}'",
-                user_id.server_name()
-            ))?;
+            let client = match Client::builder()
+                .server_name(user_id.server_name())
+                .build()
+                .await
+            {
+                Ok(c) => c,
+                Err(_) if i < retries - 1 => continue,
+                Err(e) => {
+                    return Err(anyhow::anyhow!(e)
+                        .context("failed to build matrix client"));
+                }
+            };
 
-        Ok(Self { client })
+            match client
+                .matrix_auth()
+                .login_username(&user_id, password)
+                .send()
+                .await
+            {
+                Ok(_) => return Ok(Self { client, retries }),
+                Err(_) if i < retries - 1 => continue,
+                Err(e) => {
+                    return Err(anyhow::anyhow!(e).context(format!(
+                        "failed to authenticate with matrix server '{}'",
+                        user_id.server_name()
+                    )));
+                }
+            }
+        }
+
+        unreachable!()
     }
 
     pub async fn get_room(&self, room_id_str: &str) -> anyhow::Result<Room> {
